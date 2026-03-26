@@ -1,0 +1,21 @@
+﻿@page "/factorial"
+@rendermode InteractiveServer
+
+<PageTitle>Factorial</PageTitle>
+
+<h3>Factorial</h3>
+
+<input type="number" @onchange="Calculate" />
+<div id="factorial"> @factorial </div>
+
+@code {
+    int number;
+    int factorial = 1;
+    void Calculate()
+    {
+        for (int i = 1; i <= number; i++)
+        {
+            factorial *= i;
+        }
+    }
+}
