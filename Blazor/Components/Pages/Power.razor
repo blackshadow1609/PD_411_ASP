@@ -1,0 +1,35 @@
+﻿@page "/power"
+@rendermode InteractiveServer
+
+<PageTitle>Power</PageTitle>
+
+<h3>Power</h3>
+
+<div>
+    <label>Основание: </label>
+    <input type="number" @bind="baseNumber" />
+</div>
+
+<div>
+    <label>Показатель степени: </label>
+    <input type="number" @bind="exponent" />
+</div>
+
+<div>
+    <button @onclick="CalculatePower">Вычислить</button>
+</div>
+
+<div id="result">
+    <strong>Результат:</strong> @result
+</div>
+
+@code {
+    double baseNumber;
+    double exponent;
+    double result;
+    
+    void CalculatePower()
+    {
+        result = Math.Pow(baseNumber, exponent);
+    }
+}

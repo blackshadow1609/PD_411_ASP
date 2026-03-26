@@ -1,0 +1,76 @@
+﻿@page "/fibonacci"
+@rendermode InteractiveServer
+@using System.Numerics
+
+<PageTitle>Fibonacci</PageTitle>
+
+<h3>Fibonacci</h3>
+
+<div>
+    <label>Введите номер числа Фибоначчи (n): </label>
+    <input type="number" @bind="n" min="0" @oninput="CalculateFibonacci" />
+</div>
+
+<div>
+    <button @onclick="CalculateFibonacci">Вычислить</button>
+</div>
+
+<div id="result">
+    <strong>Число Фибоначчи F(@n) =</strong> @fibonacciResult
+</div>
+
+@if (!string.IsNullOrEmpty(sequence))
+{
+    <div>
+        <strong>Последовательность:</strong> @sequence
+    </div>
+}
+
+@code {
+    int n;
+    BigInteger fibonacciResult;
+    string sequence = "";
+    string errorMessage = "";
+    
+    void CalculateFibonacci()
+    {
+        if (n < 0)
+        {
+            errorMessage = "Число должно быть неотрицательным";
+            fibonacciResult = 0;
+            sequence = "";
+            return;
+        }
+        
+        errorMessage = "";
+        fibonacciResult = GetFibonacci(n);
+        sequence = GetFibonacciSequence(n);
+    }
+    
+    BigInteger GetFibonacci(int number)
+    {
+        if (number == 0) return 0;
+        if (number == 1) return 1;
+        
+        BigInteger a = 0, b = 1, c = 0;
+        for (int i = 2; i <= number; i++)
+        {
+            c = a + b;
+            a = b;
+            b = c;
+        }
+        return b;
+    }
+    
+    string GetFibonacciSequence(int number)
+    {
+        if (number < 0) return "";
+        
+        var sequenceList = new List<BigInteger>();
+        for (int i = 0; i <= number; i++)
+        {
+            sequenceList.Add(GetFibonacci(i));
+        }
+        return string.Join(", ", sequenceList);
+    }
+}

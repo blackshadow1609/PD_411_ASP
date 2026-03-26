@@ -1,18 +1,30 @@
 ﻿@page "/factorial"
 @rendermode InteractiveServer
+@using System.Numerics
 
 <PageTitle>Factorial</PageTitle>
 
 <h3>Factorial</h3>
 
-<input type="number" @onchange="Calculate" />
+<input type="number" @bind="number" @oninput="Calculate" />
 <div id="factorial"> @factorial </div>
 
 @code {
     int number;
-    int factorial = 1;
+    BigInteger factorial;
+    string errorMessage = "";
+    
     void Calculate()
     {
+        if (number < 0)
+        {
+            errorMessage = "Факториал отрицательного числа не определен";
+            factorial = 0;
+            return;
+        }
+        
+        errorMessage = "";
+        factorial = 1;
         for (int i = 1; i <= number; i++)
         {
             factorial *= i;
