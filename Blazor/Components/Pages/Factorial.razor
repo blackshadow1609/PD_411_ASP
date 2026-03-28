@@ -6,12 +6,14 @@
 
 <h3>Factorial</h3>
 
-<input type="number" @bind="number" @oninput="Calculate" />
-<div id="factorial"> @factorial </div>
+<div class="factorial">
+    <input type="number" min="0" @bind="number" @oninput="Calculate" />
+    <div id="factorial"> @factorial </div>
+</div>
 
 @code {
     int number;
-    BigInteger factorial;
+    BigInteger factorial = 1;
     string errorMessage = "";
     
     void Calculate()
