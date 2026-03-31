@@ -16,8 +16,8 @@
 
 <QuickGrid Class="table" Items="context.Movie">
     <PropertyColumn Property="movie => movie.Title" />
-    <PropertyColumn Property="movie => movie.Release" />
-    <PropertyColumn Property="movie => movie.Ganre" />
+    <PropertyColumn Property="movie => movie.ReleaseDate" />
+    <PropertyColumn Property="movie => movie.Genre" />
 
     <TemplateColumn Context="movie">
         <a href="@($"movies/edit?id={movie.Id}")">Edit</a> |
