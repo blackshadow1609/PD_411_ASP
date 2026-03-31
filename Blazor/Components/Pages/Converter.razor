@@ -1,0 +1,350 @@
+﻿@page "/converter"
+@rendermode InteractiveServer
+
+<PageTitle>Converter</PageTitle>
+
+<h3>Number Converter</h3>
+
+<div class="converter-container">
+    <div class="converter-card">
+        <h4>Преобразование чисел</h4>
+        
+        <div class="input-group">
+            <label for="inputValue">Входное значение:</label>
+            <input type="text" id="inputValue" @bind="InputValue" @bind:event="oninput" placeholder="Введите число..." />
+        </div>
+
+        <div class="conversion-buttons">
+            <button @onclick="() => ConvertDecToBin()" class="btn">Dec → Bin</button>
+            <button @onclick="() => ConvertDecToHex()" class="btn">Dec → Hex</button>
+            <button @onclick="() => ConvertBinToDec()" class="btn">Bin → Dec</button>
+            <button @onclick="() => ConvertHexToDec()" class="btn">Hex → Dec</button>
+            <button @onclick="() => ConvertBinToHex()" class="btn">Bin → Hex</button>
+            <button @onclick="() => ConvertHexToBin()" class="btn">Hex → Bin</button>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Result))
+        {
+            <div class="result">
+                <strong>Результат:</strong> @Result
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="error-message">
+                <strong>Ошибка:</strong> @ErrorMessage
+            </div>
+        }
+
+        <div class="info">
+            <small>Поддерживаются целые числа. Для шестнадцатеричных чисел используйте префикс 0x или буквы A-F.</small>
+        </div>
+    </div>
+</div>
+
+<style>
+    .converter-container {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 20px;
+    }
+
+    .converter-card {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h3 {
+        color: #333;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    h4 {
+        color: #555;
+        margin-bottom: 25px;
+        text-align: center;
+    }
+
+    .input-group {
+        margin-bottom: 25px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+    }
+
+        input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+    .conversion-buttons {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+        margin-bottom: 25px;
+    }
+
+    .btn {
+        background: #4CAF50;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.3s, transform 0.2s;
+    }
+
+        .btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+    .result {
+        background: #f0f8ff;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        border-left: 4px solid #4CAF50;
+        word-break: break-all;
+    }
+
+    .error-message {
+        background: #ffe6e6;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        border-left: 4px solid #f44336;
+        color: #d32f2f;
+        word-break: break-all;
+    }
+
+    .info {
+        background: #f9f9f9;
+        padding: 12px;
+        border-radius: 6px;
+        color: #666;
+        font-size: 12px;
+        margin-top: 20px;
+        text-align: center;
+    }
+
+    .result strong, .error-message strong {
+        display: inline-block;
+        margin-right: 10px;
+    }
+</style>
+
+@code {
+    private string InputValue = "";
+    private string Result = "";
+    private string ErrorMessage = "";
+
+    private void ConvertDecToBin()
+    {
+        ClearMessages();
+        
+        if (string.IsNullOrWhiteSpace(InputValue))
+        {
+            ErrorMessage = "Пожалуйста, введите значение для преобразования.";
+            return;
+        }
+
+        try
+        {
+            if (!long.TryParse(InputValue, out long number))
+                throw new Exception("Введите корректное десятичное число.");
+
+            if (number < 0)
+                throw new Exception("Поддерживаются только неотрицательные числа.");
+
+            Result = Convert.ToString(number, 2);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
+
+    private void ConvertDecToHex()
+    {
+        ClearMessages();
+        
+        if (string.IsNullOrWhiteSpace(InputValue))
+        {
+            ErrorMessage = "Пожалуйста, введите значение для преобразования.";
+            return;
+        }
+
+        try
+        {
+            if (!long.TryParse(InputValue, out long number))
+                throw new Exception("Введите корректное десятичное число.");
+
+            if (number < 0)
+                throw new Exception("Поддерживаются только неотрицательные числа.");
+
+            Result = "0x" + Convert.ToString(number, 16).ToUpper();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
+
+    private void ConvertBinToDec()
+    {
+        ClearMessages();
+        
+        if (string.IsNullOrWhiteSpace(InputValue))
+        {
+            ErrorMessage = "Пожалуйста, введите значение для преобразования.";
+            return;
+        }
+
+        try
+        {
+            string binInput = InputValue.Trim().Replace(" ", "");
+            
+            if (binInput.StartsWith("0b", StringComparison.OrdinalIgnoreCase))
+                binInput = binInput[2..];
+
+            foreach (char c in binInput)
+            {
+                if (c != '0' && c != '1')
+                    throw new Exception("Введите корректное двоичное число (только 0 и 1).");
+            }
+
+            if (binInput.Length > 64)
+                throw new Exception("Двоичное число слишком длинное (максимум 64 бита).");
+
+            long result = Convert.ToInt64(binInput, 2);
+            Result = result.ToString();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
+
+    private void ConvertHexToDec()
+    {
+        ClearMessages();
+        
+        if (string.IsNullOrWhiteSpace(InputValue))
+        {
+            ErrorMessage = "Пожалуйста, введите значение для преобразования.";
+            return;
+        }
+
+        try
+        {
+            string hexInput = InputValue.Trim().Replace(" ", "");
+            
+            if (hexInput.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                hexInput = hexInput[2..];
+
+            if (string.IsNullOrEmpty(hexInput))
+                throw new Exception("Введите корректное шестнадцатеричное число.");
+
+            long result = Convert.ToInt64(hexInput, 16);
+            Result = result.ToString();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Введите корректное шестнадцатеричное число (0-9, A-F).";
+        }
+    }
+
+    private void ConvertBinToHex()
+    {
+        ClearMessages();
+        
+        if (string.IsNullOrWhiteSpace(InputValue))
+        {
+            ErrorMessage = "Пожалуйста, введите значение для преобразования.";
+            return;
+        }
+
+        try
+        {
+            string binInput = InputValue.Trim().Replace(" ", "");
+            
+            if (binInput.StartsWith("0b", StringComparison.OrdinalIgnoreCase))
+                binInput = binInput[2..];
+
+            foreach (char c in binInput)
+            {
+                if (c != '0' && c != '1')
+                    throw new Exception("Введите корректное двоичное число (только 0 и 1).");
+            }
+
+            if (binInput.Length > 64)
+                throw new Exception("Двоичное число слишком длинное (максимум 64 бита).");
+
+            long decValue = Convert.ToInt64(binInput, 2);
+            Result = "0x" + Convert.ToString(decValue, 16).ToUpper();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+    }
+
+    private void ConvertHexToBin()
+    {
+        ClearMessages();
+        
+        if (string.IsNullOrWhiteSpace(InputValue))
+        {
+            ErrorMessage = "Пожалуйста, введите значение для преобразования.";
+            return;
+        }
+
+        try
+        {
+            string hexInput = InputValue.Trim().Replace(" ", "");
+            
+            if (hexInput.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                hexInput = hexInput[2..];
+
+            if (string.IsNullOrEmpty(hexInput))
+                throw new Exception("Введите корректное шестнадцатеричное число.");
+
+            long decValue = Convert.ToInt64(hexInput, 16);
+            Result = Convert.ToString(decValue, 2);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "Введите корректное шестнадцатеричное число (0-9, A-F).";
+        }
+    }
+
+    private void ClearMessages()
+    {
+        ErrorMessage = "";
+        Result = "";
+    }
+}
