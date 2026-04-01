@@ -10,11 +10,11 @@ namespace Movies.Models
 
         [Required]
         [StringLength(50, MinimumLength = 3)]
-        public string Title { get; set; }
+        public string? Title { get; set; }
 
         [RangeAttribute(typeof(DateOnly), "1888-10-14", "9999-12-31")]
         public DateOnly ReleaseDate { get; set; }
-        public string Genre { get; set; }
+        public string? Genre { get; set; }
         public string? URL { get; set; }
     }
 }
