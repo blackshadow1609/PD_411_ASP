@@ -1,8 +1,11 @@
 ﻿@page "/movies/edit"
+@rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @using Movies.Models
+@using Microsoft.AspNetCore.Components.Forms
 @inject IDbContextFactory<Movies.Data.MoviesContext> DbFactory
 @inject NavigationManager NavigationManager
+@inject IWebHostEnvironment WebHostEnvironment
 
 <PageTitle>Edit</PageTitle>
 
@@ -18,30 +21,62 @@ else
 {
     <div class="row">
         <div class="col-md-4">
-            <EditForm method="post" Model="Movie" OnValidSubmit="UpdateMovie" FormName="edit" Enhance>
+            <EditForm Model="Movie" OnValidSubmit="UpdateMovie">
                 <DataAnnotationsValidator />
-                <ValidationSummary role="alert"/>
-                <input type="hidden" name="Movie.Id" value="@Movie.Id" />
+                <ValidationSummary role="alert" />
+                
                 <div class="mb-3">
                     <label for="title" class="form-label">Title:</label>
                     <InputText id="title" @bind-Value="Movie.Title" class="form-control" />
                     <ValidationMessage For="() => Movie.Title" class="text-danger" />
                 </div>
+                
                 <div class="mb-3">
                     <label for="releasedate" class="form-label">ReleaseDate:</label>
                     <InputDate id="releasedate" @bind-Value="Movie.ReleaseDate" class="form-control" />
                     <ValidationMessage For="() => Movie.ReleaseDate" class="text-danger" />
                 </div>
+                
                 <div class="mb-3">
                     <label for="genre" class="form-label">Genre:</label>
                     <InputText id="genre" @bind-Value="Movie.Genre" class="form-control" />
                     <ValidationMessage For="() => Movie.Genre" class="text-danger" />
                 </div>
+                
                 <div class="mb-3">
-                    <label for="URL" class="form-label">URL:</label>
+                    <label for="URL" class="form-label">URL (Wikipedia or other resource):</label>
                     <InputText id="URL" @bind-Value="Movie.URL" class="form-control" />
                     <ValidationMessage For="() => Movie.URL" class="text-danger" />
                 </div>
+                
+                <div class="mb-3">
+                    <label for="brief" class="form-label">Brief Description:</label>
+                    <InputTextArea id="brief" @bind-Value="Movie.Brief" class="form-control" rows="3" />
+                    <ValidationMessage For="() => Movie.Brief" class="text-danger" />
+                </div>
+                
+                @if (!string.IsNullOrEmpty(Movie.Images))
+                {
+                    <div class="mb-3">
+                        <label>Current Image:</label>
+                        <div>
+                            <img src="@Movie.Images" alt="Current movie image" style="max-width: 200px; max-height: 200px;" />
+                        </div>
+                    </div>
+                }
+                
+                <div class="mb-3">
+                    <label for="image" class="form-label">Change Image (optional):</label>
+                    <InputFile id="image" OnChange="OnImageSelected" />
+                    @if (imagePreviewUrl != null)
+                    {
+                        <div class="mt-2">
+                            <img src="@imagePreviewUrl" alt="Preview" style="max-width: 200px; max-height: 200px;" />
+                            <div>Новый файл: @selectedFileName</div>
+                        </div>
+                    }
+                </div>
+                
                 <button type="submit" class="btn btn-primary">Save</button>
             </EditForm>
         </div>
@@ -56,25 +91,73 @@ else
     [SupplyParameterFromQuery]
     private int Id { get; set; }
 
-    [SupplyParameterFromForm]
     private Movie? Movie { get; set; }
+    
+    private string? imagePreviewUrl;
+    private string? selectedFileName;
+    private byte[]? selectedFileBytes;
+    private string? oldImagePath;
 
     protected override async Task OnInitializedAsync()
     {
         using var context = DbFactory.CreateDbContext();
-        Movie ??= await context.Movie.FirstOrDefaultAsync(m => m.Id == Id);
+        Movie = await context.Movie.FirstOrDefaultAsync(m => m.Id == Id);
 
         if (Movie is null)
         {
             NavigationManager.NotFound();
         }
+        else
+        {
+            oldImagePath = Movie.Images;
+        }
     }
 
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task OnImageSelected(InputFileChangeEventArgs e)
+    {
+        var imageFile = e.File;
+        if (imageFile != null)
+        {
+            selectedFileName = imageFile.Name;
+            
+            using var stream = imageFile.OpenReadStream(maxAllowedSize: 10_000_000);
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            selectedFileBytes = memoryStream.ToArray();
+            
+            imagePreviewUrl = $"data:{imageFile.ContentType};base64,{Convert.ToBase64String(selectedFileBytes)}";
+            StateHasChanged();
+        }
+    }
+
     private async Task UpdateMovie()
     {
         using var context = DbFactory.CreateDbContext();
+        
+        if (selectedFileBytes != null && selectedFileName != null)
+        {
+            if (!string.IsNullOrEmpty(oldImagePath))
+            {
+                var oldImageFullPath = Path.Combine(WebHostEnvironment.WebRootPath, oldImagePath.TrimStart('/'));
+                if (File.Exists(oldImageFullPath))
+                {
+                    File.Delete(oldImageFullPath);
+                }
+            }
+            
+            var uploadsFolder = Path.Combine(WebHostEnvironment.WebRootPath, "images", "movies");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+            
+            var uniqueFileName = Guid.NewGuid().ToString() + "_" + selectedFileName;
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+            
+            await File.WriteAllBytesAsync(filePath, selectedFileBytes);
+            Movie!.Images = $"/images/movies/{uniqueFileName}";
+        }
+        
         context.Attach(Movie!).State = EntityState.Modified;
 
         try

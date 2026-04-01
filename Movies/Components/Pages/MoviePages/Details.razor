@@ -6,7 +6,7 @@
 
 <PageTitle>Details</PageTitle>
 
-<h1>"@movie?.Title" </h1>
+<h1>@movie?.Title</h1>
 
 <div>
     <h2>Movie details</h2>
@@ -15,16 +15,83 @@
     {
         <p><em>Loading...</em></p>
     }
-    else {
-        <dl class="row">
-            <dt class="col-sm-2">Title</dt>             <dd class="col-sm-10">@movie.Title</dd>
-            <dt class="col-sm-2">ReleaseDate</dt>       <dd class="col-sm-10">@movie.ReleaseDate</dd>
-            <dt class="col-sm-2">Genre</dt>             <dd class="col-sm-10">@movie.Genre</dd>
-            <dt class="col-sm-2">URL</dt>               <dd class="col-sm-10"><a href="@movie.URL">@movie.URL</a></dd>
-        </dl>
+    else
+    {
+        <div class="row">
+            @if (!string.IsNullOrEmpty(movie.Images))
+            {
+                <div class="col-md-4">
+                    <img src="@movie.Images" alt="@movie.Title" style="max-width: 100%; max-height: 400px;" />
+                </div>
+                <div class="col-md-8">
+                    <dl class="row">
+                        <dt class="col-sm-3">Title</dt>
+                        <dd class="col-sm-9">
+                            @if (!string.IsNullOrEmpty(movie.URL))
+                            {
+                                <a href="@movie.URL" target="_blank">@movie.Title</a>
+                            }
+                            else
+                            {
+                                @movie.Title
+                            }
+                        </dd>
+                        
+                        <dt class="col-sm-3">ReleaseDate</dt>
+                        <dd class="col-sm-9">@movie.ReleaseDate.ToString("yyyy-MM-dd")</dd>
+                        
+                        <dt class="col-sm-3">Genre</dt>
+                        <dd class="col-sm-9">@movie.Genre</dd>
+                        
+                        <dt class="col-sm-3">Brief Description</dt>
+                        <dd class="col-sm-9">@movie.Brief</dd>
+                        
+                        @if (!string.IsNullOrEmpty(movie.URL))
+                        {
+                            <dt class="col-sm-3">External Link</dt>
+                            <dd class="col-sm-9"><a href="@movie.URL" target="_blank">@movie.URL</a></dd>
+                        }
+                    </dl>
+                </div>
+            }
+            else
+            {
+                <div class="col-md-12">
+                    <dl class="row">
+                        <dt class="col-sm-2">Title</dt>
+                        <dd class="col-sm-10">
+                            @if (!string.IsNullOrEmpty(movie.URL))
+                            {
+                                <a href="@movie.URL" target="_blank">@movie.Title</a>
+                            }
+                            else
+                            {
+                                @movie.Title
+                            }
+                        </dd>
+                        
+                        <dt class="col-sm-2">ReleaseDate</dt>
+                        <dd class="col-sm-10">@movie.ReleaseDate.ToString("yyyy-MM-dd")</dd>
+                        
+                        <dt class="col-sm-2">Genre</dt>
+                        <dd class="col-sm-10">@movie.Genre</dd>
+                        
+                        <dt class="col-sm-2">Brief Description</dt>
+                        <dd class="col-sm-10">@movie.Brief</dd>
+                        
+                        @if (!string.IsNullOrEmpty(movie.URL))
+                        {
+                            <dt class="col-sm-2">External Link</dt>
+                            <dd class="col-sm-10"><a href="@movie.URL" target="_blank">@movie.URL</a></dd>
+                        }
+                    </dl>
+                </div>
+            }
+        </div>
+        
         <div>
             <a href="@($"/movies/edit?id={movie.Id}")">Edit</a> |
-            <a href="@($"/movies")">Back to List</a>
+            <a href="/movies">Back to List</a>
         </div>
     }
 </div>

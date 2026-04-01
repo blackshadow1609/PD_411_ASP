@@ -1,8 +1,11 @@
 ﻿@page "/movies/create"
+@rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @using Movies.Models
+@using Microsoft.AspNetCore.Components.Forms
 @inject IDbContextFactory<Movies.Data.MoviesContext> DbFactory
 @inject NavigationManager NavigationManager
+@inject IWebHostEnvironment WebHostEnvironment
 
 <PageTitle>Create</PageTitle>
 
@@ -10,31 +13,62 @@
 
 <h2>Movie</h2>
 <hr />
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Ошибка:</strong> @errorMessage
+    </div>
+}
+
 <div class="row">
     <div class="col-md-4">
-        <EditForm method="post" Model="Movie" OnValidSubmit="AddMovie" FormName="create" Enhance>
+        <EditForm Model="Movie" OnValidSubmit="AddMovie">
             <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert"/>
+            <ValidationSummary class="text-danger" role="alert" />
+            
             <div class="mb-3">
-                <label for="title" class="form-label">Title:</label> 
-                <InputText id="title" @bind-Value="Movie.Title" class="form-control" /> 
-                <ValidationMessage For="() => Movie.Title" class="text-danger" /> 
-            </div>        
+                <label for="title" class="form-label">Title:</label>
+                <InputText id="title" @bind-Value="Movie.Title" class="form-control" />
+                <ValidationMessage For="() => Movie.Title" class="text-danger" />
+            </div>
+            
             <div class="mb-3">
-                <label for="releasedate" class="form-label">ReleaseDate:</label> 
-                <InputDate id="releasedate" @bind-Value="Movie.ReleaseDate" class="form-control" /> 
-                <ValidationMessage For="() => Movie.ReleaseDate" class="text-danger" /> 
-            </div>        
+                <label for="releasedate" class="form-label">ReleaseDate:</label>
+                <InputDate id="releasedate" @bind-Value="Movie.ReleaseDate" class="form-control" />
+                <ValidationMessage For="() => Movie.ReleaseDate" class="text-danger" />
+            </div>
+            
             <div class="mb-3">
-                <label for="genre" class="form-label">Genre:</label> 
-                <InputText id="genre" @bind-Value="Movie.Genre" class="form-control" /> 
-                <ValidationMessage For="() => Movie.Genre" class="text-danger" /> 
-            </div>        
+                <label for="genre" class="form-label">Genre:</label>
+                <InputText id="genre" @bind-Value="Movie.Genre" class="form-control" />
+                <ValidationMessage For="() => Movie.Genre" class="text-danger" />
+            </div>
+            
             <div class="mb-3">
-                <label for="URL" class="form-label">URL:</label> 
-                <InputText id="URL" @bind-Value="Movie.URL" class="form-control" /> 
-                <ValidationMessage For="() => Movie.URL" class="text-danger" /> 
-            </div>        
+                <label for="URL" class="form-label">URL (Wikipedia or other resource):</label>
+                <InputText id="URL" @bind-Value="Movie.URL" class="form-control" />
+                <ValidationMessage For="() => Movie.URL" class="text-danger" />
+            </div>
+            
+            <div class="mb-3">
+                <label for="brief" class="form-label">Brief Description:</label>
+                <InputTextArea id="brief" @bind-Value="Movie.Brief" class="form-control" rows="3" />
+                <ValidationMessage For="() => Movie.Brief" class="text-danger" />
+            </div>
+            
+            <div class="mb-3">
+                <label for="image" class="form-label">Movie Poster/Image:</label>
+                <InputFile id="image" OnChange="OnImageSelected" />
+                @if (imagePreviewUrl != null)
+                {
+                    <div class="mt-2">
+                        <img src="@imagePreviewUrl" alt="Preview" style="max-width: 200px; max-height: 200px;" />
+                        <div>Файл выбран: @selectedFileName</div>
+                    </div>
+                }
+            </div>
+            
             <button type="submit" class="btn btn-primary">Create</button>
         </EditForm>
     </div>
@@ -45,17 +79,69 @@
 </div>
 
 @code {
-    [SupplyParameterFromForm]
-    private Movie Movie { get; set; } = default!;
+    private Movie Movie { get; set; } = new();
+    
+    private string? imagePreviewUrl;
+    private string? selectedFileName;
+    private byte[]? selectedFileBytes;
+    private string? errorMessage;
 
-    protected override void OnInitialized() => Movie ??= new();
+    private async Task OnImageSelected(InputFileChangeEventArgs e)
+    {
+        var imageFile = e.File;
+        if (imageFile != null)
+        {
+            selectedFileName = imageFile.Name;
+ 
+            using var stream = imageFile.OpenReadStream(maxAllowedSize: 10_000_000);
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            selectedFileBytes = memoryStream.ToArray();
 
-    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+            imagePreviewUrl = $"data:{imageFile.ContentType};base64,{Convert.ToBase64String(selectedFileBytes)}";
+            
+            StateHasChanged();
+        }
+    }
+
     private async Task AddMovie()
     {
-        using var context = DbFactory.CreateDbContext();
-        context.Movie.Add(Movie);
-        await context.SaveChangesAsync();
-        NavigationManager.NavigateTo("/movies");
+        try
+        {
+            using var context = DbFactory.CreateDbContext();
+     
+            if (selectedFileBytes != null && selectedFileName != null)
+            {
+                var uploadsFolder = Path.Combine(WebHostEnvironment.WebRootPath, "images", "movies");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+                
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + selectedFileName;
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+        
+                await File.WriteAllBytesAsync(filePath, selectedFileBytes);
+             
+                if (File.Exists(filePath))
+                {
+                    Movie.Images = $"/images/movies/{uniqueFileName}";
+                }
+                else
+                {
+                    errorMessage = "Ошибка: файл изображения не был сохранен на диск";
+                    return;
+                }
+            }
+            
+            context.Movie.Add(Movie);
+            await context.SaveChangesAsync();
+            
+            NavigationManager.NavigateTo("/movies");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Ошибка при сохранении: {ex.Message}";
+        }
     }
 }
