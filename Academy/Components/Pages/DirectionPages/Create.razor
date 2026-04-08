@@ -3,6 +3,7 @@
 @using Academy.Models
 @inject IDbContextFactory<Academy.Data.AcademyContext> DbFactory
 @inject NavigationManager NavigationManager
+@rendermode InteractiveServer
 
 <PageTitle>Create</PageTitle>
 
@@ -14,12 +15,17 @@
     <div class="col-md-4">
         <EditForm method="post" Model="Direction" OnValidSubmit="AddDirection" FormName="create" Enhance>
             <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert"/>
+            <ValidationSummary class="text-danger" role="alert" />
             <div class="mb-3">
-                <label for="direction_name" class="form-label">direction_name:</label> 
-                <InputText id="direction_name" @bind-Value="Direction.direction_name" class="form-control" /> 
-                <ValidationMessage For="() => Direction.direction_name" class="text-danger" /> 
-            </div>        
+                <label for="direction_id" class="form-label">ID</label>
+                <InputNumber id="direction_id" @bind-Value="ID" class="form-control" />
+                <ValidationMessage For="() => Direction.direction_id" class="text-danger" />
+            </div>
+            <div class="mb-3">
+                <label for="direction_name" class="form-label">direction_name:</label>
+                <InputText id="direction_name" @bind-Value="Direction.direction_name" class="form-control" />
+                <ValidationMessage For="() => Direction.direction_name" class="text-danger" />
+            </div>
             <button type="submit" class="btn btn-primary">Create</button>
         </EditForm>
     </div>
@@ -34,6 +40,13 @@
     private Direction Direction { get; set; } = default!;
 
     protected override void OnInitialized() => Direction ??= new();
+
+    int id;
+    int ID
+    {
+        get => Direction.direction_id;
+        set => Direction.direction_id = (byte)(id = value);
+    }
 
     // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
     private async Task AddDirection()

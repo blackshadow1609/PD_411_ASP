@@ -17,7 +17,11 @@
     }
     else {
         <dl class="row">
-            <dt class="col-sm-2">direction_name</dt>
+            <dt class="col-sm-2">ID</dt>
+            <dd class="col-sm-10">@direction.direction_id</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Название</dt>
             <dd class="col-sm-10">@direction.direction_name</dd>
         </dl>
         <div>
@@ -31,7 +35,7 @@
     private Direction? direction;
 
     [SupplyParameterFromQuery]
-    private byte direction_id { get; set; }
+    private int direction_id { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
