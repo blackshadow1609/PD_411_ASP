@@ -1,16 +1,16 @@
 ﻿@page "/directions/edit"
+@rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @using Academy.Models
 @inject IDbContextFactory<Academy.Data.AcademyContext> DbFactory
 @inject NavigationManager NavigationManager
 
-<PageTitle>Edit</PageTitle>
+<PageTitle>Edit Direction</PageTitle>
 
-<h1>Edit</h1>
+<h1>Edit Direction</h1>
 
-<h2>Direction</h2>
 <hr />
-@if (Direction is null)
+@if (direction is null)
 {
     <p><em>Loading...</em></p>
 }
@@ -18,15 +18,21 @@ else
 {
     <div class="row">
         <div class="col-md-4">
-            <EditForm method="post" Model="Direction" OnValidSubmit="UpdateDirection" FormName="edit" Enhance>
+            <EditForm Model="direction" OnValidSubmit="UpdateDirection" FormName="edit">
                 <DataAnnotationsValidator />
-                <ValidationSummary role="alert"/>
-                <input type="hidden" name="Direction.direction_id" value="@Direction.direction_id" />
+                <ValidationSummary class="text-danger" />
+                
                 <div class="mb-3">
-                    <label for="direction_name" class="form-label">direction_name:</label>
-                    <InputText id="direction_name" @bind-Value="Direction.direction_name" class="form-control" />
-                    <ValidationMessage For="() => Direction.direction_name" class="text-danger" />
+                    <label class="form-label">ID:</label>
+                    <input type="number" class="form-control" value="@direction.direction_id" disabled />
                 </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Direction Name:</label>
+                    <InputText @bind-Value="direction.direction_name" class="form-control" />
+                    <ValidationMessage For="() => direction.direction_name" class="text-danger" />
+                </div>
+                
                 <button type="submit" class="btn btn-primary">Save</button>
             </EditForm>
         </div>
@@ -39,51 +45,26 @@ else
 
 @code {
     [SupplyParameterFromQuery]
-    private byte direction_id { get; set; }
+    private int direction_id { get; set; }
 
-    [SupplyParameterFromForm]
-    private Direction? Direction { get; set; }
+    private Direction? direction;
 
     protected override async Task OnInitializedAsync()
     {
         using var context = DbFactory.CreateDbContext();
-        Direction ??= await context.Directions.FirstOrDefaultAsync(m => m.direction_id == direction_id);
-
-        if (Direction is null)
+        direction = await context.Directions.FirstOrDefaultAsync(m => m.direction_id == direction_id);
+        
+        if (direction is null)
         {
-            NavigationManager.NotFound();
+            NavigationManager.NavigateTo("/directions");
         }
     }
 
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
     private async Task UpdateDirection()
     {
         using var context = DbFactory.CreateDbContext();
-        context.Attach(Direction!).State = EntityState.Modified;
-
-        try
-        {
-            await context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!DirectionExists(Direction!.direction_id))
-            {
-                NavigationManager.NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
-
+        context.Entry(direction!).State = EntityState.Modified;
+        await context.SaveChangesAsync();
         NavigationManager.NavigateTo("/directions");
-    }
-
-    private bool DirectionExists(byte direction_id)
-    {
-        using var context = DbFactory.CreateDbContext();
-        return context.Directions.Any(e => e.direction_id == direction_id);
     }
 }

@@ -1,31 +1,33 @@
 ﻿@page "/directions/create"
+@rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @using Academy.Models
 @inject IDbContextFactory<Academy.Data.AcademyContext> DbFactory
 @inject NavigationManager NavigationManager
-@rendermode InteractiveServer
 
-<PageTitle>Create</PageTitle>
+<PageTitle>Create Direction</PageTitle>
 
-<h1>Create</h1>
+<h1>Create Direction</h1>
 
-<h2>Direction</h2>
 <hr />
 <div class="row">
     <div class="col-md-4">
-        <EditForm method="post" Model="Direction" OnValidSubmit="AddDirection" FormName="create" Enhance>
+        <EditForm Model="direction" OnValidSubmit="AddDirection" FormName="create">
             <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
+            <ValidationSummary class="text-danger" />
+            
             <div class="mb-3">
-                <label for="direction_id" class="form-label">ID</label>
-                <InputNumber id="direction_id" @bind-Value="ID" class="form-control" />
-                <ValidationMessage For="() => Direction.direction_id" class="text-danger" />
+                <label class="form-label">ID:</label>
+                <InputNumber @bind-Value="idValue" class="form-control" min="0" max="255" />
+                <ValidationMessage For="() => idValue" class="text-danger" />
             </div>
+            
             <div class="mb-3">
-                <label for="direction_name" class="form-label">direction_name:</label>
-                <InputText id="direction_name" @bind-Value="Direction.direction_name" class="form-control" />
-                <ValidationMessage For="() => Direction.direction_name" class="text-danger" />
+                <label class="form-label">Direction Name:</label>
+                <InputText @bind-Value="direction.direction_name" class="form-control" />
+                <ValidationMessage For="() => direction.direction_name" class="text-danger" />
             </div>
+            
             <button type="submit" class="btn btn-primary">Create</button>
         </EditForm>
     </div>
@@ -36,23 +38,20 @@
 </div>
 
 @code {
-    [SupplyParameterFromForm]
-    private Direction Direction { get; set; } = default!;
+    private Direction direction = new();
+    private int idValue;
 
-    protected override void OnInitialized() => Direction ??= new();
-
-    int id;
-    int ID
-    {
-        get => Direction.direction_id;
-        set => Direction.direction_id = (byte)(id = value);
-    }
-
-    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
     private async Task AddDirection()
     {
+        if (idValue < 0 || idValue > 255)
+        {
+            return;
+        }
+        
+        direction.direction_id = (byte)idValue;
+        
         using var context = DbFactory.CreateDbContext();
-        context.Directions.Add(Direction);
+        context.Directions.Add(direction);
         await context.SaveChangesAsync();
         NavigationManager.NavigateTo("/directions");
     }
