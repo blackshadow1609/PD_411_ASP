@@ -15,5 +15,10 @@ namespace Academy.Data
         }
 
         public DbSet<Academy.Models.Direction> Directions { get; set; } = default!;
+
+        public DbSet<Discipline> Disciplines { get; set; }
+        public DbSet<Group> Groups { get; set; }
+        public DbSet<Student> Students { get; set; }
+        public DbSet<Teacher> Teachers { get; set; } = default!;
     }
 }

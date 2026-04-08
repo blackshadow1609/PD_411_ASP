@@ -18,8 +18,7 @@
             
             <div class="mb-3">
                 <label class="form-label">ID:</label>
-                <InputNumber @bind-Value="idValue" class="form-control" min="0" max="255" />
-                <ValidationMessage For="() => idValue" class="text-danger" />
+                <input type="number" class="form-control" value="@direction.direction_id" disabled />
             </div>
             
             <div class="mb-3">
@@ -39,17 +38,41 @@
 
 @code {
     private Direction direction = new();
-    private int idValue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetNextAvailableId();
+    }
+
+    private async Task GetNextAvailableId()
+    {
+        using var context = DbFactory.CreateDbContext();
+        
+        // Get all existing IDs
+        var existingIds = await context.Directions
+            .Select(d => d.direction_id)
+            .OrderBy(id => id)
+            .ToListAsync();
+        
+        // Find the next available ID starting from 0
+        byte nextId = 0;
+        foreach (var id in existingIds)
+        {
+            if (id == nextId)
+            {
+                nextId++;
+            }
+            else
+            {
+                break;
+            }
+        }
+        
+        direction.direction_id = nextId;
+    }
 
     private async Task AddDirection()
     {
-        if (idValue < 0 || idValue > 255)
-        {
-            return;
-        }
-        
-        direction.direction_id = (byte)idValue;
-        
         using var context = DbFactory.CreateDbContext();
         context.Directions.Add(direction);
         await context.SaveChangesAsync();

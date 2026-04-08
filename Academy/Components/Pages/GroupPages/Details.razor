@@ -1,0 +1,59 @@
+﻿@page "/groups/details"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using Academy.Models
+@inject IDbContextFactory<Academy.Data.AcademyContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Group Details</PageTitle>
+
+<h1>Group Details</h1>
+
+<div>
+    <hr />
+    @if (group is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <dl class="row">
+            <dt class="col-sm-2">ID</dt>
+            <dd class="col-sm-10">@group.group_id</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Group Name</dt>
+            <dd class="col-sm-10">@group.group_name</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Direction ID</dt>
+            <dd class="col-sm-10">@group.direction_id</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Year</dt>
+            <dd class="col-sm-10">@group.year</dd>
+        </dl>
+        <div>
+            <a href="/groups/edit?group_id=@group.group_id">Edit</a> |
+            <a href="/groups">Back to List</a>
+        </div>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    private int group_id { get; set; }
+
+    private Group? group;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        group = await context.Groups.FirstOrDefaultAsync(m => m.group_id == group_id);
+        
+        if (group is null)
+        {
+            NavigationManager.NavigateTo("/groups");
+        }
+    }
+}

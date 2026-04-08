@@ -1,0 +1,86 @@
+﻿@page "/groups/create"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using Academy.Models
+@inject IDbContextFactory<Academy.Data.AcademyContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create Group</PageTitle>
+
+<h1>Create Group</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form @onsubmit="CreateGroup">
+            <div class="mb-3">
+                <label class="form-label">ID:</label>
+                <input type="number" class="form-control" value="@groupId" disabled />
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Group Name:</label>
+                <input type="text" @bind="groupName" class="form-control" />
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Direction ID:</label>
+                <input type="number" @bind="directionIdValue" class="form-control" />
+                <small class="text-muted">Enter Direction ID (0-255)</small>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Year:</label>
+                <input type="number" @bind="yearValue" class="form-control" />
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Create</button>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a href="/groups">Back to List</a>
+</div>
+
+@code {
+    private int groupId = 1;
+    private string groupName = "";
+    private int? directionIdValue;
+    private int? yearValue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        
+        if (await context.Groups.AnyAsync())
+        {
+            var maxId = await context.Groups.MaxAsync(g => g.group_id);
+            groupId = maxId + 1;
+        }
+        else
+        {
+            groupId = 1;
+        }
+    }
+
+    private async Task CreateGroup()
+    {
+        var group = new Group
+        {
+            group_id = groupId,
+            group_name = groupName,
+            year = yearValue
+        };
+        
+        if (directionIdValue.HasValue)
+        {
+            group.direction_id = (byte)directionIdValue.Value;
+        }
+        
+        using var context = DbFactory.CreateDbContext();
+        context.Groups.Add(group);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/groups");
+    }
+}

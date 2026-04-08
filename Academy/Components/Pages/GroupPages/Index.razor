@@ -1,0 +1,60 @@
+﻿@page "/groups"
+@rendermode InteractiveServer
+@using Microsoft.EntityFrameworkCore
+@using Academy.Models
+@using Academy.Data
+@implements IAsyncDisposable
+@inject IDbContextFactory<Academy.Data.AcademyContext> DbFactory
+
+<PageTitle>Groups</PageTitle>
+
+<h1>Groups</h1>
+
+<p>
+    <a href="/groups/create">Create New</a>
+</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Group Name</th>
+            <th>Direction ID</th>
+            <th>Year</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in groups)
+        {
+            <tr>
+                <td>@item.group_id</td>
+                <td>@item.group_name</td>
+                <td>@item.direction_id</td>
+                <td>@item.year</td>
+                <td>
+                    <a href="/groups/edit?group_id=@item.group_id">Edit</a> |
+                    <a href="/groups/details?group_id=@item.group_id">Details</a> |
+                    <a href="/groups/delete?group_id=@item.group_id">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<Group> groups = new();
+    private AcademyContext context = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        context = DbFactory.CreateDbContext();
+        groups = await context.Groups.OrderBy(g => g.group_id).ToListAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (context != null)
+            await context.DisposeAsync();
+    }
+}
