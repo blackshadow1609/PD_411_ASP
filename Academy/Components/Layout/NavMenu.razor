@@ -1,4 +1,6 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@rendermode InteractiveServer
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">Academy</a>
     </div>
@@ -19,33 +21,82 @@
                 <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
             </NavLink>
         </div>
-        @* ---------------------------------------------------------------------------------------- *@
+
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="directions">
                 <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Directions
             </NavLink>
         </div>
+        
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="disciplines">
                 <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Disciplines
             </NavLink>
         </div>
+        
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="groups">
                 <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Groups
             </NavLink>
         </div>
+        
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="students">
                 <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Students
             </NavLink>
         </div>
-        @* ---------------------------------------------------------------------------------------- *@
+
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="weather">
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
             </NavLink>
         </div>
+
+        <div class="nav-item px-3" style="margin-top: 20px;">
+            <button @onclick="ToggleTheme" class="btn btn-sm btn-secondary">
+                @if (isDarkMode)
+                {
+                    <span>☀️ Light Mode</span>
+                }
+                else
+                {
+                    <span>🌙 Dark Mode</span>
+                }
+            </button>
+        </div>
     </nav>
 </div>
 
+@code {
+    private bool isDarkMode = false;
+
+    [Inject]
+    private IJSRuntime JS { get; set; } = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            isDarkMode = await JS.InvokeAsync<bool>("theme.initTheme");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        try
+        {
+            isDarkMode = !isDarkMode;
+            await JS.InvokeVoidAsync("theme.setDarkMode", isDarkMode);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+}
