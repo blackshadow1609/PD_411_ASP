@@ -1,16 +1,16 @@
 ﻿@page "/disciplines/edit"
+@rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @using Academy.Models
 @inject IDbContextFactory<Academy.Data.AcademyContext> DbFactory
 @inject NavigationManager NavigationManager
 
-<PageTitle>Edit</PageTitle>
+<PageTitle>Edit Discipline</PageTitle>
 
-<h1>Edit</h1>
+<h1>Edit Discipline</h1>
 
-<h2>Discipline</h2>
 <hr />
-@if (Discipline is null)
+@if (discipline is null)
 {
     <p><em>Loading...</em></p>
 }
@@ -18,17 +18,35 @@ else
 {
     <div class="row">
         <div class="col-md-4">
-            <EditForm method="post" Model="Discipline" OnValidSubmit="UpdateDiscipline" FormName="edit" Enhance>
+            <EditForm Model="discipline" OnValidSubmit="UpdateDiscipline" FormName="edit">
                 <DataAnnotationsValidator />
-                <ValidationSummary role="alert"/>
-                <input type="hidden" name="Discipline.discipline_id" value="@Discipline.discipline_id" />
+                <ValidationSummary class="text-danger" />
+                
                 <div class="mb-3">
-                <span class="text-danger">*</span>
-                    <label for="discipline_name" class="form-label">discipline_name:</label>
-                    <InputText id="discipline_name" @bind-Value="Discipline.discipline_name" class="form-control" aria-required="true"/>
-                    <ValidationMessage For="() => Discipline.discipline_name" class="text-danger" />
+                    <label class="form-label">ID:</label>
+                    <input type="number" class="form-control" value="@discipline.discipline_id" disabled />
                 </div>
-                <button type="submit" class="btn btn-primary">Save</button>
+                
+                <div class="mb-3">
+                    <label class="form-label">Discipline Name:</label>
+                    <InputText @bind-Value="discipline.discipline_name" class="form-control" />
+                    <ValidationMessage For="() => discipline.discipline_name" class="text-danger" />
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="text-danger mt-1">@errorMessage</div>
+                    }
+                </div>
+                
+                <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                    @if (isSubmitting)
+                    {
+                        <span>Saving...</span>
+                    }
+                    else
+                    {
+                        <span>Save</span>
+                    }
+                </button>
             </EditForm>
         </div>
     </div>
@@ -40,51 +58,58 @@ else
 
 @code {
     [SupplyParameterFromQuery]
-    private byte discipline_id { get; set; }
+    private int discipline_id { get; set; }
 
-    [SupplyParameterFromForm]
-    private Discipline? Discipline { get; set; }
+    private Discipline? discipline;
+    private string errorMessage = "";
+    private bool isSubmitting = false;
 
     protected override async Task OnInitializedAsync()
     {
         using var context = DbFactory.CreateDbContext();
-        Discipline ??= await context.Disciplines.FirstOrDefaultAsync(m => m.discipline_id == discipline_id);
-
-        if (Discipline is null)
+        discipline = await context.Disciplines.FirstOrDefaultAsync(m => m.discipline_id == discipline_id);
+        
+        if (discipline is null)
         {
-            NavigationManager.NotFound();
+            NavigationManager.NavigateTo("/disciplines");
         }
     }
 
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
     private async Task UpdateDiscipline()
     {
-        using var context = DbFactory.CreateDbContext();
-        context.Attach(Discipline!).State = EntityState.Modified;
+        if (discipline == null) return;
+        
+        errorMessage = "";
+        isSubmitting = true;
+        StateHasChanged();
 
         try
         {
+            using var context = DbFactory.CreateDbContext();
+            
+            // Check for duplicate name (excluding current)
+            var existing = await context.Disciplines
+                .FirstOrDefaultAsync(d => d.discipline_id != discipline.discipline_id &&
+                    d.discipline_name != null &&
+                    d.discipline_name.ToLower() == discipline.discipline_name.ToLower());
+            
+            if (existing != null)
+            {
+                errorMessage = $"Discipline '{discipline.discipline_name}' already exists!";
+                isSubmitting = false;
+                StateHasChanged();
+                return;
+            }
+            
+            context.Entry(discipline).State = EntityState.Modified;
             await context.SaveChangesAsync();
+            NavigationManager.NavigateTo("/disciplines");
         }
-        catch (DbUpdateConcurrencyException)
+        catch (Exception ex)
         {
-            if (!DisciplineExists(Discipline!.discipline_id))
-            {
-                NavigationManager.NotFound();
-            }
-            else
-            {
-                throw;
-            }
+            errorMessage = $"Error: {ex.Message}";
+            isSubmitting = false;
+            StateHasChanged();
         }
-
-        NavigationManager.NavigateTo("/disciplines");
-    }
-
-    private bool DisciplineExists(byte discipline_id)
-    {
-        using var context = DbFactory.CreateDbContext();
-        return context.Disciplines.Any(e => e.discipline_id == discipline_id);
     }
 }

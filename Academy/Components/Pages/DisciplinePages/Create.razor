@@ -1,27 +1,46 @@
 ﻿@page "/disciplines/create"
+@rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @using Academy.Models
 @inject IDbContextFactory<Academy.Data.AcademyContext> DbFactory
 @inject NavigationManager NavigationManager
 
-<PageTitle>Create</PageTitle>
+<PageTitle>Create Discipline</PageTitle>
 
-<h1>Create</h1>
+<h1>Create Discipline</h1>
 
-<h2>Discipline</h2>
 <hr />
 <div class="row">
     <div class="col-md-4">
-        <EditForm method="post" Model="Discipline" OnValidSubmit="AddDiscipline" FormName="create" Enhance>
+        <EditForm Model="discipline" OnValidSubmit="AddDiscipline" FormName="create">
             <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert"/>
+            <ValidationSummary class="text-danger" />
+            
             <div class="mb-3">
-                <span class="text-danger">*</span>
-                <label for="discipline_name" class="form-label">discipline_name:</label> 
-                <InputText id="discipline_name" @bind-Value="Discipline.discipline_name" class="form-control" aria-required="true"/> 
-                <ValidationMessage For="() => Discipline.discipline_name" class="text-danger" /> 
-            </div>        
-            <button type="submit" class="btn btn-primary">Create</button>
+                <label class="form-label">ID:</label>
+                <input type="number" class="form-control" value="@discipline.discipline_id" disabled />
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Discipline Name:</label>
+                <InputText @bind-Value="discipline.discipline_name" class="form-control" />
+                <ValidationMessage For="() => discipline.discipline_name" class="text-danger" />
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="text-danger mt-1">@errorMessage</div>
+                }
+            </div>
+            
+            <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                @if (isSubmitting)
+                {
+                    <span>Saving...</span>
+                }
+                else
+                {
+                    <span>Create</span>
+                }
+            </button>
         </EditForm>
     </div>
 </div>
@@ -31,17 +50,62 @@
 </div>
 
 @code {
-    [SupplyParameterFromForm]
-    private Discipline Discipline { get; set; } = default!;
+    private Discipline discipline = new();
+    private string errorMessage = "";
+    private bool isSubmitting = false;
 
-    protected override void OnInitialized() => Discipline ??= new();
+    protected override async Task OnInitializedAsync()
+    {
+        await GetNextAvailableId();
+    }
 
-    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
-    private async Task AddDiscipline()
+    private async Task GetNextAvailableId()
     {
         using var context = DbFactory.CreateDbContext();
-        context.Disciplines.Add(Discipline);
-        await context.SaveChangesAsync();
-        NavigationManager.NavigateTo("/disciplines");
+        
+        if (await context.Disciplines.AnyAsync())
+        {
+            var maxId = await context.Disciplines.MaxAsync(d => d.discipline_id);
+            discipline.discipline_id = (short)(maxId + 1);
+        }
+        else
+        {
+            discipline.discipline_id = 0;
+        }
+    }
+
+    private async Task AddDiscipline()
+    {
+        errorMessage = "";
+        isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            using var context = DbFactory.CreateDbContext();
+            
+            // Check for duplicate name
+            var existing = await context.Disciplines
+                .FirstOrDefaultAsync(d => d.discipline_name != null &&
+                    d.discipline_name.ToLower() == discipline.discipline_name.ToLower());
+            
+            if (existing != null)
+            {
+                errorMessage = $"Discipline '{discipline.discipline_name}' already exists!";
+                isSubmitting = false;
+                StateHasChanged();
+                return;
+            }
+            
+            context.Disciplines.Add(discipline);
+            await context.SaveChangesAsync();
+            NavigationManager.NavigateTo("/disciplines");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+            isSubmitting = false;
+            StateHasChanged();
+        }
     }
 }

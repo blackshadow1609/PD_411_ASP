@@ -1,46 +1,51 @@
 ﻿@page "/disciplines/details"
+@rendermode InteractiveServer
 @using Microsoft.EntityFrameworkCore
 @using Academy.Models
 @inject IDbContextFactory<Academy.Data.AcademyContext> DbFactory
 @inject NavigationManager NavigationManager
 
-<PageTitle>Details</PageTitle>
+<PageTitle>Discipline Details</PageTitle>
 
-<h1>Details</h1>
+<h1>Discipline Details</h1>
 
 <div>
-    <h2>Discipline</h2>
     <hr />
     @if (discipline is null)
     {
         <p><em>Loading...</em></p>
     }
-    else {
+    else
+    {
         <dl class="row">
-            <dt class="col-sm-2">discipline_name</dt>
+            <dt class="col-sm-2">ID</dt>
+            <dd class="col-sm-10">@discipline.discipline_id</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Name</dt>
             <dd class="col-sm-10">@discipline.discipline_name</dd>
         </dl>
         <div>
-            <a href="@($"/disciplines/edit?discipline_id={discipline.discipline_id}")">Edit</a> |
-            <a href="@($"/disciplines")">Back to List</a>
+            <a href="/disciplines/edit?discipline_id=@discipline.discipline_id">Edit</a> |
+            <a href="/disciplines">Back to List</a>
         </div>
     }
 </div>
 
 @code {
-    private Discipline? discipline;
-
     [SupplyParameterFromQuery]
-    private byte discipline_id { get; set; }
+    private int discipline_id { get; set; }
+
+    private Discipline? discipline;
 
     protected override async Task OnInitializedAsync()
     {
         using var context = DbFactory.CreateDbContext();
         discipline = await context.Disciplines.FirstOrDefaultAsync(m => m.discipline_id == discipline_id);
-
+        
         if (discipline is null)
         {
-            NavigationManager.NotFound();
+            NavigationManager.NavigateTo("/disciplines");
         }
     }
 }
