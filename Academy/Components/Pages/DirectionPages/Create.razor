@@ -25,9 +25,22 @@
                 <label class="form-label">Direction Name:</label>
                 <InputText @bind-Value="direction.direction_name" class="form-control" />
                 <ValidationMessage For="() => direction.direction_name" class="text-danger" />
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="text-danger mt-1">@errorMessage</div>
+                }
             </div>
             
-            <button type="submit" class="btn btn-primary">Create</button>
+            <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                @if (isSubmitting)
+                {
+                    <span>Checking...</span>
+                }
+                else
+                {
+                    <span>Create</span>
+                }
+            </button>
         </EditForm>
     </div>
 </div>
@@ -38,6 +51,8 @@
 
 @code {
     private Direction direction = new();
+    private string errorMessage = "";
+    private bool isSubmitting = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -48,13 +63,11 @@
     {
         using var context = DbFactory.CreateDbContext();
         
-        // Get all existing IDs
         var existingIds = await context.Directions
             .Select(d => d.direction_id)
             .OrderBy(id => id)
             .ToListAsync();
         
-        // Find the next available ID starting from 0
         byte nextId = 0;
         foreach (var id in existingIds)
         {
@@ -73,9 +86,35 @@
 
     private async Task AddDirection()
     {
-        using var context = DbFactory.CreateDbContext();
-        context.Directions.Add(direction);
-        await context.SaveChangesAsync();
-        NavigationManager.NavigateTo("/directions");
+        errorMessage = "";
+        isSubmitting = true;
+        StateHasChanged();
+        
+        try
+        {
+            using var context = DbFactory.CreateDbContext();
+            
+            var existingDirection = await context.Directions
+                .FirstOrDefaultAsync(d => d.direction_name != null &&
+                    d.direction_name.ToLower() == direction.direction_name.ToLower());
+            
+            if (existingDirection != null)
+            {
+                errorMessage = $"Direction '{direction.direction_name}' already exists!";
+                isSubmitting = false;
+                StateHasChanged();
+                return;
+            }
+            
+            context.Directions.Add(direction);
+            await context.SaveChangesAsync();
+            NavigationManager.NavigateTo("/directions");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+            isSubmitting = false;
+            StateHasChanged();
+        }
     }
 }
